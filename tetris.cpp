@@ -86,15 +86,8 @@ struct Game {
         werase(score_win);
         werase(next_win);
 
-        // 繪製邊框
-        for (int i = 0; i < height + 2; ++i) {
-            mvwaddch(win, i, 0, BORDER_CHAR | COLOR_PAIR(8)); // 左邊框
-            mvwaddch(win, i, width + 1, BORDER_CHAR | COLOR_PAIR(8)); // 右邊框
-        }
-        for (int j = 0; j < width + 2; ++j) {
-            mvwaddch(win, 0, j, BORDER_CHAR | COLOR_PAIR(8)); // 上邊框
-            mvwaddch(win, height + 1, j, BORDER_CHAR | COLOR_PAIR(8)); // 下邊框
-        }
+        // Draw border
+        box(win, BORDER_CHAR, BORDER_CHAR);
 
         // Draw current shape
         for (int i = 0; i < currentShape.size(); ++i) {
@@ -309,33 +302,45 @@ vector<int> loadScores() {
 void printTopScores(const vector<int>& scores, int topN = 3) {
     vector<int> topScores = scores;
     sort(topScores.rbegin(), topScores.rend());
-    cout << "Top " << topN << " Scores:" << endl;
     for (int i = 0; i < min(topN, static_cast<int>(topScores.size())); ++i) {
-        cout << i + 1 << ". " << topScores[i] << endl;
+        mvprintw(2 + i, 0, "%d. %d", i + 1, topScores[i]);
     }
 }
 
-int main() {
-    initscr(); // 初始化 ncurses
-    timeout(10); // 減少超時以加快輸入檢測
-    noecho(); // 不回顯輸入
-    cbreak(); // 禁用行緩衝
-    keypad(stdscr, TRUE); // 啟用特殊按鍵
-    curs_set(0); // 隱藏光標
-    start_color(); // 啟動顏色功能
+// Show the game menu
+void showMenu() {
+    erase();  // Clear the screen
+    mvprintw(0, 0, "=== GAME MENU ===");
+    mvprintw(2, 0, "1. Start Game");
+    mvprintw(3, 0, "2. View Leaderboard");
+    mvprintw(4, 0, "3. Exit");
+    mvprintw(6, 0, "Choose an option: ");
+    refresh();
+}
 
-    // 定義顏色對
-    init_pair(1, COLOR_CYAN, COLOR_BLACK);   // I
-    init_pair(2, COLOR_GREEN, COLOR_BLACK);  // S
-    init_pair(3, COLOR_RED, COLOR_BLACK);    // Z
-    init_pair(4, COLOR_YELLOW, COLOR_BLACK); // O
-    init_pair(5, COLOR_MAGENTA, COLOR_BLACK); // T
-    init_pair(6, COLOR_BLUE, COLOR_BLACK);   // L
-    init_pair(7, COLOR_WHITE, COLOR_BLACK);  // J
-    init_pair(8, COLOR_WHITE, COLOR_BLACK);  // 邊框
+// View the leaderboard
+void viewLeaderboard() {
+    vector<int> scores = loadScores();
+    clear();  // Clear the screen
+    mvprintw(0, 0, "=== LEADERBOARD ===");
+    if (scores.empty()) {
+        mvprintw(2, 0, "No records.");
+    } else {
+        printTopScores(scores, 5);
+    }
+    mvprintw(7, 0, "Press any key to return to menu...");
+    refresh();
+    while (true) {
+        int choice = getch();
+        if (choice != -1) {
+            break;
+        }
+    }
+}
 
+// Start the game
+void startGame() {
     Game game;
-
     try {
         while (true) {
             game.draw();
@@ -359,14 +364,53 @@ int main() {
 
     endwin();  // End ncurses mode
 
-    // 輸出分數並保存
-    cout << "Game Over. Your Score: " << game.score << endl;
+    // Save the score and reload ncurses for the menu
     saveScore(game.score);
+    initscr();
+    timeout(10);
+    noecho();
+    cbreak();
+    keypad(stdscr, TRUE);
+    curs_set(0);
+    start_color();
+}
 
-    // 載入所有分數並輸出前三
-    vector<int> scores = loadScores();
-    printTopScores(scores);
+int main() {
+    initscr();  // Initialize ncurses
+    timeout(10);  // Reduce timeout to speed up input detection
+    noecho();  // Do not echo input
+    cbreak();  // Disable line buffering
+    keypad(stdscr, TRUE);  // Enable special keys
+    curs_set(0);  // Hide cursor
+    start_color();  // Enable color functionality
 
+    // Define color pairs
+    init_pair(1, COLOR_CYAN, COLOR_BLACK);   // I
+    init_pair(2, COLOR_GREEN, COLOR_BLACK);  // S
+    init_pair(3, COLOR_RED, COLOR_BLACK);    // Z
+    init_pair(4, COLOR_YELLOW, COLOR_BLACK); // O
+    init_pair(5, COLOR_MAGENTA, COLOR_BLACK); // T
+    init_pair(6, COLOR_BLUE, COLOR_BLACK);   // L
+    init_pair(7, COLOR_WHITE, COLOR_BLACK);  // J
+    init_pair(8, COLOR_WHITE, COLOR_BLACK);  // Border
+
+    while (true) {
+        showMenu();
+        int choice = getch();
+
+        if (choice == '1') {
+            // Start game
+            startGame();
+        } else if (choice == '2') {
+            // View leaderboard
+            viewLeaderboard();
+        } else if (choice == '3') {
+            // Exit game
+            break;
+        }
+    }
+
+    endwin();  // End ncurses mode
     return 0;
 }
 
