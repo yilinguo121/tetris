@@ -15,28 +15,29 @@ using namespace std::chrono;
 const int width = 10;
 const int height = 20;
 const char EMPTY_CHAR = ' ';
-const char BORDER_CHAR = '#'; // 邊框字符
-const char BLOCK_CHAR = '#'; // 方塊字符
+const char BORDER_CHAR = '#';  // Border character
+const char BLOCK_CHAR = '#';   // Block character
 
+// Tetromino shapes (7 types)
 vector<vector<int>> shapes[7] = {
-    {{1, 1, 1, 1}}, // I
-    {{1, 1, 0}, {0, 1, 1}}, // S
-    {{0, 1, 1}, {1, 1, 0}}, // Z
-    {{1, 1}, {1, 1}}, // O
-    {{1, 1, 1}, {0, 1, 0}}, // T
-    {{1, 1, 1}, {1, 0, 0}}, // L
-    {{1, 1, 1}, {0, 0, 1}}  // J
+    {{1, 1, 1, 1}},           // I
+    {{1, 1, 0}, {0, 1, 1}},   // S
+    {{0, 1, 1}, {1, 1, 0}},   // Z
+    {{1, 1}, {1, 1}},         // O
+    {{1, 1, 1}, {0, 1, 0}},   // T
+    {{1, 1, 1}, {1, 0, 0}},   // L
+    {{1, 1, 1}, {0, 0, 1}}    // J
 };
 
-// 每個方塊的顏色
+// Colors for each shape
 const int shapeColors[7] = {
-    1, // I - Cyan
-    2, // S - Green
-    3, // Z - Red
-    4, // O - Yellow
-    5, // T - Magenta
-    6, // L - Blue
-    7  // J - White
+    1,  // I - Cyan
+    2,  // S - Green
+    3,  // Z - Red
+    4,  // O - Yellow
+    5,  // T - Magenta
+    6,  // L - Blue
+    7   // J - White
 };
 
 struct Game {
@@ -62,6 +63,7 @@ struct Game {
         newShape();
     }
 
+    // Generate a new shape
     void newShape() {
         shape = nextShapes[0];
         currentShape = shapes[shape];
@@ -70,14 +72,15 @@ struct Game {
         x = width / 2 - currentShape[0].size() / 2;
         y = 0;
         if (checkCollision(0, 0)) {
-            throw runtime_error("遊戲結束");
+            throw runtime_error("Game Over");
         }
     }
 
+    // Draw the game board and shapes
     void draw() {
-        static WINDOW *win = newwin(height + 2, width + 2, 0, 0); // 增加邊框空間
-        static WINDOW *score_win = newwin(3, width + 2, height + 2, 0); // 增加邊框空間
-        static WINDOW *next_win = newwin(height + 2, 10, 0, width + 2); // 顯示下一個方塊的窗口
+        static WINDOW *win = newwin(height + 2, width + 2, 0, 0);  // Game window with border
+        static WINDOW *score_win = newwin(3, width + 2, height + 2, 0);  // Score window
+        static WINDOW *next_win = newwin(height + 2, 10, 0, width + 2);  // Next shape window
 
         werase(win);
         werase(score_win);
@@ -93,7 +96,7 @@ struct Game {
             mvwaddch(win, height + 1, j, BORDER_CHAR | COLOR_PAIR(8)); // 下邊框
         }
 
-        // 繪製當前方塊
+        // Draw current shape
         for (int i = 0; i < currentShape.size(); ++i) {
             for (int j = 0; j < currentShape[0].size(); ++j) {
                 if (currentShape[i][j]) {
@@ -106,7 +109,7 @@ struct Game {
             }
         }
 
-        // 繪製遊戲面板
+        // Draw game board
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
                 if (board[i][j] != EMPTY_CHAR) {
@@ -115,12 +118,12 @@ struct Game {
             }
         }
 
-        // 繪製分數
+        // Display score
         mvwprintw(score_win, 1, 1, "Score: %d", score);
         wrefresh(win);
         wrefresh(score_win);
 
-        // 繪製下三個方塊
+        // Display the next three shapes
         mvwprintw(next_win, 1, 1, "Next:");
         for (int k = 0; k < 3; ++k) {
             int nextShape = nextShapes[k];
@@ -135,6 +138,7 @@ struct Game {
         wrefresh(next_win);
     }
 
+    // Check for collision with other blocks or the borders
     bool checkCollision(int dx, int dy) {
         for (int i = 0; i < currentShape.size(); ++i) {
             for (int j = 0; j < currentShape[0].size(); ++j) {
@@ -150,6 +154,7 @@ struct Game {
         return false;
     }
 
+    // Place the shape on the board
     void placeShape() {
         for (int i = 0; i < currentShape.size(); ++i) {
             for (int j = 0; j < currentShape[0].size(); ++j) {
@@ -160,22 +165,24 @@ struct Game {
         }
     }
 
+    // Flash the full line before removing it
     void flashLine(int row) {
-        for (int k = 0; k < 3; ++k) { // 閃爍3次
+        for (int k = 0; k < 3; ++k) {  // Flash 3 times
             for (int j = 0; j < width; ++j) {
-                mvwaddch(stdscr, row + 1, j + 1, ' ' | COLOR_PAIR(8)); // 用背景色
+                mvwaddch(stdscr, row + 1, j + 1, ' ' | COLOR_PAIR(8));  // Use background color
             }
             wrefresh(stdscr);
             this_thread::sleep_for(100ms);
 
             for (int j = 0; j < width; ++j) {
-                mvwaddch(stdscr, row + 1, j + 1, BLOCK_CHAR | COLOR_PAIR(8)); // 用邊框色
+                mvwaddch(stdscr, row + 1, j + 1, BLOCK_CHAR | COLOR_PAIR(8));  // Use border color
             }
             wrefresh(stdscr);
             this_thread::sleep_for(100ms);
         }
     }
 
+    // Remove full lines from the board
     void removeFullLines() {
         int linesCleared = 0;
         for (int i = 0; i < height; ++i) {
@@ -187,7 +194,7 @@ struct Game {
                 }
             }
             if (full) {
-                flashLine(i); // 先閃爍
+                flashLine(i);  // Flash the line before removing
                 board.erase(board.begin() + i);
                 board.insert(board.begin(), vector<char>(width, EMPTY_CHAR));
                 ++linesCleared;
@@ -202,6 +209,7 @@ struct Game {
         }
     }
 
+    // Check if rotating the shape will cause a collision
     bool checkRotationCollision(const vector<vector<int>>& rotatedShape, int newX, int newY) {
         for (int i = 0; i < rotatedShape.size(); ++i) {
             for (int j = 0; j < rotatedShape[0].size(); ++j) {
@@ -217,6 +225,7 @@ struct Game {
         return false;
     }
 
+    // Rotate the current shape
     void rotate() {
         vector<vector<int>> rotated(currentShape[0].size(), vector<int>(currentShape.size()));
         for (int i = 0; i < currentShape.size(); ++i) {
@@ -225,12 +234,13 @@ struct Game {
             }
         }
 
-        // 檢查旋轉後是否超出範圍或碰撞
+        // Check for collision after rotation
         if (!checkRotationCollision(rotated, x, y)) {
             currentShape = rotated;
         }
     }
 
+    // Update the game state
     bool update() {
         steady_clock::time_point now = steady_clock::now();
         duration<float> elapsed = now - lastDropTime;
@@ -244,13 +254,14 @@ struct Game {
                 removeFullLines();
                 newShape();
                 if (checkCollision(0, 0)) {
-                    return false; // 遊戲結束
+                    return false;  // Game over
                 }
             }
         }
         return true;
     }
 
+    // Move the shape horizontally or vertically
     void move(int dx, int dy) {
         if (!checkCollision(dx, dy)) {
             x += dx;
@@ -258,6 +269,7 @@ struct Game {
         }
     }
 
+    // Set accelerated drop speed
     void setAccelerated(bool accelerated) {
         isAccelerated = accelerated;
         currentDropInterval = isAccelerated ? acceleratedDropInterval : normalDropInterval;
@@ -266,6 +278,7 @@ struct Game {
 
 int Game::highScore = 0;
 
+// Save the score to a file
 void saveScore(int score) {
     ofstream file("scores.txt", ios::app);
     if (file.is_open()) {
@@ -276,6 +289,7 @@ void saveScore(int score) {
     }
 }
 
+// Load the scores from the file
 vector<int> loadScores() {
     vector<int> scores;
     ifstream file("scores.txt");
@@ -291,6 +305,7 @@ vector<int> loadScores() {
     return scores;
 }
 
+// Print the top N scores
 void printTopScores(const vector<int>& scores, int topN = 3) {
     vector<int> topScores = scores;
     sort(topScores.rbegin(), topScores.rend());
@@ -326,23 +341,23 @@ int main() {
             game.draw();
 
             int ch = getch();
-            if (ch == 'q') break; // 退出
-            if (ch == 'a') game.move(-1, 0); // 左移
-            if (ch == 'd') game.move(1, 0);  // 右移
-            if (ch == 'w') game.rotate(); // 旋轉
-            if (ch == 's') game.setAccelerated(true); // 加速
-            if (ch != 's' && game.isAccelerated) game.setAccelerated(false); // 停止加速
+            if (ch == 'q') break;  // Quit
+            if (ch == 'a') game.move(-1, 0);  // Move left
+            if (ch == 'd') game.move(1, 0);   // Move right
+            if (ch == 'w') game.rotate();     // Rotate
+            if (ch == 's') game.setAccelerated(true);  // Accelerate drop
+            if (ch != 's' && game.isAccelerated) game.setAccelerated(false);  // Stop acceleration
 
             if (!game.update()) {
-                break; // 若有碰撞則結束遊戲
+                break;  // End game if collision detected
             }
         }
     } catch (const exception &e) {
-        endwin(); // 結束 ncurses 模式
+        endwin();  // End ncurses mode
         cout << e.what() << endl;
     }
 
-    endwin(); // 結束 ncurses 模式
+    endwin();  // End ncurses mode
 
     // 輸出分數並保存
     cout << "Game Over. Your Score: " << game.score << endl;
